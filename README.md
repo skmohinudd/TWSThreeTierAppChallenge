@@ -150,4 +150,4 @@ Go to EC2 console, access security group section and delete security groups crea
 For any queries or issues, please open an issue in the repository.
 
 ---
-Happy Learning! thanks you 🚀👨‍💻👩‍💻
+Happy Learning! thanks you am good here🚀👨‍💻👩‍💻
