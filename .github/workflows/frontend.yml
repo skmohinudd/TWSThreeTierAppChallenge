@@ -1,4 +1,4 @@
-name: Frontend Deployemnt
+name: Frontend Deployment
 
 on:
   push:
@@ -7,10 +7,9 @@ on:
     paths:
       - 'Application-Code/frontend/**'
       - 'Kubernetes-Manifests-file/Frontend/**'
-    
 
 permissions:
-  id-token: write   # REQUIRED FOR OIDC
+  id-token: write
   contents: read
 
 jobs:
@@ -21,7 +20,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # OIDC-based AWS login (NO secrets)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,23 +31,33 @@ jobs:
           aws ecr get-login-password --region us-east-1 | \
           docker login --username AWS --password-stdin 077419561607.dkr.ecr.us-east-1.amazonaws.com
 
+      # 🔥 BUILD IMAGE WITH UNIQUE TAG (IMPORTANT FIX)
       - name: Build Frontend Image
         run: |
-          docker build -t frontendapp ./Application-Code/frontend
+          docker build -t frontendapp:${GITHUB_SHA} ./Application-Code/frontend
 
+      # 🔥 TAG IMAGE PROPERLY
       - name: Tag Image
         run: |
-          docker tag frontendapp:latest \
-          077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:latest
+          docker tag frontendapp:${GITHUB_SHA} \
+          077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:${GITHUB_SHA}
 
+      # 🔥 PUSH IMAGE
       - name: Push Image
         run: |
-          docker push 077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:latest
+          docker push 077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:${GITHUB_SHA}
 
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig --region us-east-1 --name eksdemo1
 
-      - name: Deploy Frontend
+      # 🔥 FORCE DEPLOY NEW IMAGE TO PODS
+      - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f Kubernetes-Manifests-file/Frontend/deployment.yaml
+          kubectl set image deployment/frontend \
+          frontend=077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:${GITHUB_SHA}
+
+      # 🔥 WAIT FOR PODS TO UPDATE
+      - name: Verify Deployment
+        run: |
+          kubectl rollout status deployment/frontend
