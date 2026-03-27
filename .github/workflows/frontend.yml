@@ -1,13 +1,16 @@
-name: Frontend CI/CD to ECR & EKS
+name: Frontend Deployemnt
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'Application-Code/frontend/**'
+      - 'Kubernetes-Manifests-file/Frontend/**'
     
 
 permissions:
-  id-token: write   # 🔥 REQUIRED FOR OIDC
+  id-token: write   # REQUIRED FOR OIDC
   contents: read
 
 jobs:
@@ -18,7 +21,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # ✅ OIDC-based AWS login (NO secrets)
+      # OIDC-based AWS login (NO secrets)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
