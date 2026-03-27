@@ -6,52 +6,47 @@ on:
       - main
     
 
+permissions:
+  id-token: write   # 🔥 REQUIRED FOR OIDC
+  contents: read
+
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Get code from GitHub repo
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. Configure AWS access
+      # ✅ OIDC-based AWS login (NO secrets)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::077419561607:role/YOUR-OIDC-ROLE
           aws-region: us-east-1
 
-      # 3. Login to AWS ECR
       - name: Login to ECR
         run: |
           aws ecr get-login-password --region us-east-1 | \
           docker login --username AWS --password-stdin 077419561607.dkr.ecr.us-east-1.amazonaws.com
 
-      # 4. Build Docker Image (Frontend)
       - name: Build Frontend Image
         run: |
           docker build -t frontendapp ./Application-Code/frontend
 
-      # 5. Tag Image
       - name: Tag Image
         run: |
           docker tag frontendapp:latest \
           077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:latest
 
-      # 6. Push Image to ECR
       - name: Push Image
         run: |
           docker push 077419561607.dkr.ecr.us-east-1.amazonaws.com/frontendapp:latest
 
-      # 7. Connect to EKS Cluster
       - name: Update kubeconfig
         run: |
-          aws eks update-kubeconfig --region us-east-1 --name eksdemo-1
+          aws eks update-kubeconfig --region us-east-1 --name eksdemo1
 
-      # 8. Deploy to Kubernetes
       - name: Deploy Frontend
         run: |
           kubectl apply -f Kubernetes-Manifests-file/Frontend/deployment.yaml
-          kubectl apply -f Kubernetes-Manifests-file/Frontend/service.yaml
