@@ -66,6 +66,8 @@ sudo apt install unzip
 unzip awscliv2.zip
 sudo ./aws/install -i /usr/local/aws-cli -b /usr/local/bin --update
 aws configure
+
+  #### yes added
 ```
 
 ### Step 4: Install Docker
